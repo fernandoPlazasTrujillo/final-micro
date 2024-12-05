@@ -1,0 +1,68 @@
+#include <ESP32Servo.h>
+
+// Instanciamos nuestro servo
+Servo servo;
+int pinServo = 18;
+
+const int TRIG_PIN = 5; 
+const int ECHO_PIN = 4; 
+const float DISTANCE_THRESHOLD = 10.0; // Distancia mínima en cm para activar el servo
+
+void setup() {
+  // Configuramos el pin del servo
+  servo.attach(pinServo, 1000, 2000);
+
+  Serial.begin(115200);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Inicializamos el servo en posición neutra
+  servo.write(90);
+}
+
+float measureDistance() {
+  // Generar un pulso de 10 microsegundos en el pin TRIG
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Medir el tiempo que tarda en regresar el pulso
+  long duration = pulseIn(ECHO_PIN, HIGH);
+
+  // Calcular la distancia en centímetros
+  return duration * 0.034 / 2;
+}
+
+void moveServo() {
+  // Gira un cuarto de vuelta en sentido antihorario
+  servo.write(0); // Velocidad máxima en sentido antihorario
+  delay(355);     // 1/4 de vuelta
+  servo.write(90); // Detener el motor
+  delay(10000);     // Pausa
+
+  // Gira un cuarto de vuelta en sentido horario
+  servo.write(180); // Velocidad máxima en sentido horario
+  delay(355);       // 1/4 de vuelta
+  servo.write(90);  // Detener el motor
+  delay(1000);      // Pausa
+}
+
+void loop() {
+  float distance = measureDistance();
+
+  // Mostrar la distancia en el monitor serie
+  Serial.print("Distancia: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  if (distance > 0 && distance <= DISTANCE_THRESHOLD) {
+    Serial.println("Objeto detectado. Moviendo servo...");
+    moveServo();
+  } else {
+    servo.write(90); // Asegurarse de que el servo esté detenido
+    delay(500);      // Esperar antes de la siguiente medición
+  }
+}
+
